@@ -13,6 +13,9 @@ from urllib.parse import unquote
 
 NUM_ROWS = 0
 
+CTRL_CHAR = '•'
+OCTRL_CHAR = "◦"
+
 def get_parser():
     """Returns the parser argument for this script."""
     try:
@@ -47,26 +50,21 @@ def json_from_text(text_file):
 
 def insert_vertical_qw(data):
     """Inserts vertical quantum wires."""
-    special = ["•", "◦"]
+    special = [CTRL_CHAR, OCTRL_CHAR]
     subcol = []    
 
     for col in data['cols']:
         subcols = [''] * len(col)
         if any(s in col for s in special):
-            inds1 = [i for i, x in enumerate(col) if x == "•"] 
-            inds2 = [i for i, x in enumerate(col) if x == "◦"] 
-            if len(inds1) == 0: ctrl_ind = inds2[0]
-            elif len(inds2) == 0: ctrl_ind = inds1[0]
-            else: ctrl_ind = min([inds1[0], inds2[0]]) 
+            inds1 = [i for i, x in enumerate(col) if x == CTRL_CHAR]
+            inds2 = [i for i, x in enumerate(col) if x == OCTRL_CHAR]
+
+
             nt_gates = [gate for gate in col if gate not in special and gate != 1]
             targ_ind = col.index(nt_gates[0])
-            diff = targ_ind - ctrl_ind
-            for i in inds1: col[i] = "\\ctrl{}"
-            for i in inds2: col[i] = "\\octrl{}"
-            if col[ctrl_ind] == "\\octrl{}":
-               col[ctrl_ind] = ''.join(["\\octrl{", str(diff), "}"])
-            else:
-               col[ctrl_ind] = ''.join(["\\ctrl{", str(diff), "}"])
+
+            for i in inds1: col[i] = f"\\ctrl{{{targ_ind - i}}}"
+            for i in inds2: col[i] = f"\\octrl{{{targ_ind - i}}}"
             vgates = []
             lst = ['ctrl', "1"]
             vind = 0
@@ -119,7 +117,7 @@ def vqw_append(subcol):
 def tex_initial_states(data):
     """Initial states are texed."""
     initial_state = []
-    initial_state = [''.join(["\lstick{\ket{", str(data['init'][row]),"}}"]) for row in range(len(data['init']))]
+    initial_state = [''.join(["\lstick{$\ket{", str(data['init'][row]),"}$}"]) for row in range(len(data['init']))]
     return data, initial_state
 
 def substitute_gates(data, vqw_ind, subcol, initial_state):
